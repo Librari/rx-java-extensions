@@ -4,16 +4,21 @@ import com.appunite.detector.SimpleDetector;
 import com.appunite.rx.ObservableExtensions;
 import com.appunite.rx.ResponseOrError;
 import com.appunite.rx.example.model.dao.PostsDao;
+import com.appunite.rx.example.model.helpers.CacheProvider;
 import com.appunite.rx.example.model.model.Post;
 import com.appunite.rx.example.model.model.PostId;
 import com.appunite.rx.example.model.model.PostsIdsResponse;
 import com.appunite.rx.example.model.model.PostsResponse;
 import com.appunite.rx.operators.MoreOperators;
+import com.appunite.rx.subjects.CacheSubject;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -36,9 +41,13 @@ public class MainPresenter {
     private final Subject<AdapterItem, AdapterItem> openDetailsSubject = PublishSubject.create();
     @Nonnull
     private final PostsDao postsDao;
+    @Nonnull
+    private final CacheProvider cacheProvider;
 
-    public MainPresenter(@Nonnull PostsDao postsDao) {
+    public MainPresenter(@Nonnull PostsDao postsDao,
+                         @Nonnull final CacheProvider cacheProvider) {
         this.postsDao = postsDao;
+        this.cacheProvider = cacheProvider;
         titleObservable = postsObservable()
                 .compose(ResponseOrError.map(new Func1<PostsResponse, String>() {
                     @Override
@@ -109,7 +118,9 @@ public class MainPresenter {
 
     @Nonnull
     public Observable<ImmutableList<AdapterItem>> itemsObservable() {
-        return itemsObservable.compose(ResponseOrError.<ImmutableList<AdapterItem>>onlySuccess());
+        final Type type = new TypeToken<ImmutableList<AdapterItem>>() {}.getType();
+        return itemsObservable.compose(ResponseOrError.<ImmutableList<AdapterItem>>onlySuccess())
+                .compose(CacheSubject.behaviorRefCount(cacheProvider.<ImmutableList<AdapterItem>>getCacheCreatorForKey("list", type)));
     }
 
     @Nonnull

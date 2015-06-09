@@ -1,5 +1,6 @@
 package com.appunite.rx.example.dagger;
 
+import android.app.Application;
 import android.content.Context;
 import android.support.annotation.NonNull;
 
@@ -10,6 +11,7 @@ import com.appunite.rx.example.model.api.GuestbookService;
 import com.appunite.rx.example.model.dao.PostsDao;
 import com.appunite.rx.example.model.helpers.CacheProvider;
 import com.appunite.rx.example.model.helpers.DiskCacheCreator;
+import com.appunite.rx.example.model.presenter.MainPresenter;
 import com.appunite.rx.subjects.CacheSubject;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
@@ -38,6 +40,11 @@ public class FakeDagger {
 
     private static final Object LOCK = new Object();
     private static PostsDao postsDao;
+
+    @Nonnull
+    public static MainPresenter getMainPresenter(@Nonnull Context context) {
+        return new MainPresenter(getPostsDaoInstance(context), getCacheProvider(context, getGson()));
+    }
 
     private static class SyncExecutor implements Executor {
         @Override
